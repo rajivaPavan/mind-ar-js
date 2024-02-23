@@ -31,6 +31,8 @@ export class MindARThree {
     this.anchors = [];
     this.faceMeshes = [];
 
+    this.latestEstimate = null;
+
     this.container.appendChild(this.renderer.domElement);
     this.container.appendChild(this.cssRenderer.domElement);
 
@@ -86,6 +88,10 @@ export class MindARThree {
     this.anchors.push(anchor);
     this.cssScene.add(group);
     return anchor;
+  }
+
+  getLatestEstimate() {
+    return this.latestEstimate;
   }
 
   _startVideo() {
@@ -159,13 +165,16 @@ export class MindARThree {
         }
 
         if (hasFace) {
-          const { metricLandmarks, faceMatrix, faceScale } = estimateResult;
+          const { metricLandmarks, faceMatrix, faceScale, blendshapes} = estimateResult;
+          this.latestEstimate = estimateResult;
+
           for (let i = 0; i < this.anchors.length; i++) {
             const landmarkIndex = this.anchors[i].landmarkIndex;
             const landmarkMatrix = this.controller.getLandmarkMatrix(landmarkIndex);
 
             if (this.anchors[i].css) {
               const cssScale = 0.001;
+
               const scaledElements = [
                 cssScale * landmarkMatrix[0], cssScale * landmarkMatrix[1], landmarkMatrix[2], landmarkMatrix[3],
                 cssScale * landmarkMatrix[4], cssScale * landmarkMatrix[5], landmarkMatrix[6], landmarkMatrix[7],
@@ -180,6 +189,8 @@ export class MindARThree {
           for (let i = 0; i < this.faceMeshes.length; i++) {
             this.faceMeshes[i].matrix.set(...faceMatrix);
           }
+        } else {
+          this.latestEstimate = null;
         }
       }
       this._resize();
@@ -210,6 +221,7 @@ export class MindARThree {
       this.camera.near = near;
       this.camera.far = far;
       this.camera.updateProjectionMatrix();
+
       this.renderer.setSize(this.video.videoWidth, this.video.videoHeight);
       this.cssRenderer.setSize(this.video.videoWidth, this.video.videoHeight);
     }
